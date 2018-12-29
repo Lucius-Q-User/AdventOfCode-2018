@@ -1,0 +1,66 @@
+#!/usr/bin/env sbcl --script
+(defstruct star pos-x pos-y speed-x speed-y)
+(defun star-step (star)
+  (incf (star-pos-x star) (star-speed-x star))
+  (incf (star-pos-y star) (star-speed-y star))
+)
+(setq pos-list nil)
+(setq grid-min-x 200000000)
+(setq grid-min-y 200000000)
+(setq grid-max-x 0)
+(setq grid-max-y 0)
+
+(with-open-file (fil "in.txt")
+  (loop for line = (read-line fil nil nil) while line do
+    (setq c-1 (search "," line))
+    (setq cb-1 (search ">" line))
+
+    (setq ob-2 (1+ (search "<" line :from-end t)))
+    (setq c-2 (search "," line :from-end t))
+    (setq cb-2 (search ">" line :from-end t))
+
+    (setq ps-x (parse-integer line :start 10 :end c-1))
+    (setq ps-y (parse-integer line :start (1+ c-1) :end cb-1))
+
+    (setq v-x (parse-integer line :start ob-2 :end c-2))
+    (setq v-y (parse-integer line :start (+ 2 c-2) :end cb-2))
+
+    (push (make-star :pos-x ps-x :pos-y ps-y :speed-x v-x :speed-y v-y) pos-list)
+    (setq grid-min-x (min grid-min-x ps-x))
+    (setq grid-min-y (min grid-min-y ps-y))
+    (setq grid-max-x (max grid-max-x ps-x))
+    (setq grid-max-y (max grid-max-y ps-y))
+  )
+)
+
+
+(do ((i 0 (1+ i))) (nil)
+  (setq grid-min-x 200000000)
+  (setq grid-min-y 200000000)
+  (setq grid-max-x 0)
+  (setq grid-max-y 0)
+  (dolist (str pos-list)
+    (star-step str)
+    (setq grid-min-x (min grid-min-x (star-pos-x str)))
+    (setq grid-min-y (min grid-min-y (star-pos-y str)))
+    (setq grid-max-x (max grid-max-x (star-pos-x str)))
+    (setq grid-max-y (max grid-max-y (star-pos-y str)))
+  )
+  (write (list (- grid-max-x grid-min-x) (- grid-max-y grid-min-y)))
+  (write (1+ i))
+  (write-line "")
+
+  (when (> 200 (- grid-max-y grid-min-y))
+    (setq grid (make-array (list (- grid-max-x grid-min-x -1) (- grid-max-y grid-min-y -1)) :initial-element #\. ))
+    (dolist (str pos-list)
+      (setf (aref grid (- (star-pos-x str) grid-min-x) (- (star-pos-y str) grid-min-y)) #\#)
+    )
+    (loop for y from 0 to (- grid-max-y grid-min-y) do
+      (loop for x from 0 to (- grid-max-x grid-min-x) do
+        (write-char (aref grid x y))
+      )
+      (write-char #\Newline)
+    )
+    (write-line "")
+  )
+)
